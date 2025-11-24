@@ -11,6 +11,9 @@ import screeninfo
 import threading
 
 
+azimuth_over_grayscale = None
+
+
 def init_pax():
     while True:
         try:
@@ -76,6 +79,7 @@ class App(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.__measuring_thread = MeasuringThread()
         self.__measuring_thread.start()
+        time.sleep(1)
 
         self.result = np.empty((256,2))
         self.counter = 0
@@ -89,19 +93,22 @@ class App(tk.Tk):
         self.destroy()
 
     def get_data(self):
-        self.image_display.show_image(fromarray(np.full((self.image_display.height, self.image_display.width), self.counter, dtype=np.uint8)))
-        try:
-            with self.__measuring_thread.azimuth_lock:
-                azimuth = self.__measuring_thread.azimuth
-            self.result[self.counter][0] = self.counter
-            self.result[self.counter][1] = azimuth
-            self.counter += 1
-            time.sleep(0.5)
-            if self.counter <= 255:
-                self.after(500, self.get_data)
-        except Exception as e:
-            print(e)
+        img = fromarray(np.full((self.image_display.height, self.image_display.width), self.counter, dtype=np.uint8))
+        self.image_display.show_image(img)
+
+        with self.__measuring_thread.azimuth_lock:
+            azimuth = self.__measuring_thread.azimuth or 0
+        self.result[self.counter][0] = self.counter
+        self.result[self.counter][1] = azimuth
+        self.counter += 1
+
+        if self.counter <= 255:
+            self.after(500, self.get_data)
+        else:
+            global azimuth_over_grayscale
+            azimuth_over_grayscale = self.result
             self.close()
+
 
 class MeasuringThread(threading.Thread):
     def __init__(self):
@@ -126,6 +133,7 @@ class MeasuringThread(threading.Thread):
 
 app = App()
 app.mainloop()
+print(azimuth_over_grayscale)
 
 
 
