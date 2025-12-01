@@ -84,6 +84,9 @@ class App(tk.Tk):
         self.result = np.empty((256,2))
         self.counter = 0
 
+        while self._is_azimuth_none():
+            print('Azimuth none')
+
         self.get_data()
 
     def close(self):
@@ -97,7 +100,7 @@ class App(tk.Tk):
         self.image_display.show_image(img)
 
         with self.__measuring_thread.azimuth_lock:
-            azimuth = self.__measuring_thread.azimuth or 0
+            azimuth = self.__measuring_thread.azimuth
         self.result[self.counter][0] = self.counter
         self.result[self.counter][1] = azimuth
         self.counter += 1
@@ -108,6 +111,18 @@ class App(tk.Tk):
             global azimuth_over_grayscale
             azimuth_over_grayscale = self.result
             self.close()
+
+    def _is_azimuth_none(self):
+        with self.__measuring_thread.azimuth_lock:
+            azimuth = self.__measuring_thread.azimuth
+
+        time.sleep(0.2)
+
+        if azimuth is None:
+            return True
+        else:
+            return False
+
 
 
 class MeasuringThread(threading.Thread):
@@ -135,6 +150,4 @@ app = App()
 app.mainloop()
 print(azimuth_over_grayscale)
 
-
-
-
+np.savetxt("gs_over_azimuth.csv", azimuth_over_grayscale, delimiter=",")
