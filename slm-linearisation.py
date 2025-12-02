@@ -1,18 +1,29 @@
 import sys
 import time
 from PIL.Image import fromarray
-sys.path.append(r"C:\Users\Mika Music\PycharmProjects\PAX1000-controller")
-from pax1000_controller import *
+from matplotlib import pyplot as plt
 import numpy as np
 import tkinter as tk
 from PIL import Image, ImageTk
 from tkinter import messagebox
 import screeninfo
 import threading
+sys.path.append(r"C:\Users\Mika Music\PycharmProjects\PAX1000-controller")
+from pax1000_controller import *
+
+penal = 'VIS-014'
+wavelength = 491
+retardation = 1 #pi
+lower_voltage = 1
+upper_voltage = '1,86'
+appendix = '_test'
 
 
-azimuth_over_grayscale = None
+azimuth_over_grayscale = []
+max_rotation = np.degrees(retardation * np.pi)
 
+def linear_function(x, max_rotation, max_gs):
+    return (max_rotation/max_gs) * x
 
 def init_pax():
     while True:
@@ -81,35 +92,42 @@ class App(tk.Tk):
         self.__measuring_thread.start()
         time.sleep(1)
 
-        self.result = np.empty((256,2))
-        self.counter = 0
+        self.result = np.empty(256)
+        self.counter_gs = 0
+        self.counter_cycle = 0
 
         while self._is_azimuth_none():
-            print('Azimuth none')
+            print('PAX1000 starting up')
 
         self.get_data()
 
     def close(self):
         with self.__measuring_thread.kill_flag_lock:
             self.__measuring_thread.kill_flag = True
-        print(self.result)
         self.destroy()
 
     def get_data(self):
-        img = fromarray(np.full((self.image_display.height, self.image_display.width), self.counter, dtype=np.uint8))
-        self.image_display.show_image(img)
+        if self.counter_cycle <= 5:
+            if self.counter_gs <= 255:
+                img = fromarray(np.full((self.image_display.height, self.image_display.width), self.counter_gs, dtype=np.uint8))
+                self.image_display.show_image(img)
 
-        with self.__measuring_thread.azimuth_lock:
-            azimuth = self.__measuring_thread.azimuth
-        self.result[self.counter][0] = self.counter
-        self.result[self.counter][1] = azimuth
-        self.counter += 1
+                with self.__measuring_thread.azimuth_lock:
+                    azimuth = self.__measuring_thread.azimuth
+                self.result[self.counter_gs] = azimuth
 
-        if self.counter <= 255:
-            self.after(500, self.get_data)
+                print(f'cycle {self.counter_cycle} measurement {self.counter_gs}/265: azimuth = {azimuth}')
+
+                self.counter_gs += 1
+                self.after(500, self.get_data)
+            else:
+                global azimuth_over_grayscale
+                azimuth_over_grayscale.append(self.result.copy())
+                self.result = np.empty((256, 2))
+                self.counter_gs = 0
+                self.counter_cycle += 1
+                self.after(500, self.get_data)
         else:
-            global azimuth_over_grayscale
-            azimuth_over_grayscale = self.result
             self.close()
 
     def _is_azimuth_none(self):
@@ -148,6 +166,42 @@ class MeasuringThread(threading.Thread):
 
 app = App()
 app.mainloop()
-print(azimuth_over_grayscale)
 
-np.savetxt("gs_over_azimuth.csv", azimuth_over_grayscale, delimiter=",")
+data_mean = np.stack(azimuth_over_grayscale).mean(axis=0)
+
+jumps = []
+
+for i, datapoint in enumerate(data_mean):
+    if i < 255:
+        if abs(datapoint - data_mean[i + 1]) > 100:
+            jumps.append(i)
+    datapoint = datapoint - 90 * - 1
+    data_mean[i] = datapoint
+
+data_mean[:jumps[0] + 1] = data_mean[0:jumps[0] + 1] + 180
+data_mean[jumps[1] + 1:] = data_mean[jumps[1] + 1:] - 180
+
+data_mean = (data_mean * -1) + 180
+
+ls = np.linspace(0,256, 256)
+
+plt.plot(ls, data_mean)
+plt.title("Azimuth Over Grayscale")
+plt.axhline(y=90, color='r', linewidth=0.4)
+plt.axvline(x=128, color='r', linewidth=0.4)
+plt.show()
+
+delta_list = linear_function(ls, max_rotation, 255) - data_mean
+
+linearized = linear_function(ls, max_rotation, 255) + delta_list
+lut_float = ((linearized / max(linearized)) * 319)
+lut = np.empty_like(lut_float)
+for i, datapoint in enumerate(lut_float):
+    lut[i] = round(datapoint)
+
+plt.plot(ls, lut)
+plt.title("lut")
+plt.show()
+
+np.savetxt(f"{penal}_{wavelength}nm_9-5_lin-{retardation}pi_{lower_voltage}V-{upper_voltage}V{appendix}.csv", lut , delimiter=",", fmt="%d")
+
