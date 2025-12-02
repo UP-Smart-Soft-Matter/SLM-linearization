@@ -123,7 +123,7 @@ class App(tk.Tk):
             else:
                 global azimuth_over_grayscale
                 azimuth_over_grayscale.append(self.result.copy())
-                self.result = np.empty((256, 2))
+                self.result = np.empty(256)
                 self.counter_gs = 0
                 self.counter_cycle += 1
                 self.after(500, self.get_data)
