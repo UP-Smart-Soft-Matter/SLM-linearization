@@ -22,6 +22,7 @@ azimuth_over_grayscale[1][jumps[1] + 1:] = azimuth_over_grayscale[1][jumps[1] + 
 azimuth_over_grayscale[1] = (azimuth_over_grayscale[1] * -1) + 180
 
 plt.plot(azimuth_over_grayscale[0], azimuth_over_grayscale[1])
+plt.title("Azimuth Over Grayscale")
 plt.axhline(y=90, color='r', linewidth=0.4)
 plt.axvline(x=128, color='r', linewidth=0.4)
 plt.show()
@@ -33,5 +34,9 @@ lut_float = ((linearized / max(linearized)) * 319)
 lut = np.empty_like(lut_float)
 for i, datapoint in enumerate(lut_float):
     lut[i] = round(datapoint)
+
+plt.plot(azimuth_over_grayscale[0], lut)
+plt.title("lut")
+plt.show()
 
 np.savetxt("VIS-014_491nm_9-5_lin-2pi_1V-1komma86V.csv", lut , delimiter=",", fmt="%d")
