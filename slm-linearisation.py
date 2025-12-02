@@ -116,17 +116,17 @@ class App(tk.Tk):
                     azimuth = self.__measuring_thread.azimuth
                 self.result[self.counter_gs] = azimuth
 
-                print(f'cycle {self.counter_cycle+1} measurement {self.counter_gs+1}/256: azimuth = {azimuth}')
+                print(f'cycle {self.counter_cycle+1}/5 measurement {self.counter_gs+1}/256: azimuth = {azimuth}')
 
                 self.counter_gs += 1
-                self.after(500, self.get_data)
+                self.after(200, self.get_data)
             else:
                 global azimuth_over_grayscale
                 azimuth_over_grayscale.append(self.result.copy())
                 self.result = np.empty(256)
                 self.counter_gs = 0
                 self.counter_cycle += 1
-                self.after(500, self.get_data)
+                self.after(200, self.get_data)
         else:
             self.close()
 
