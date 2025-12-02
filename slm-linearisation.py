@@ -116,7 +116,7 @@ class App(tk.Tk):
                     azimuth = self.__measuring_thread.azimuth
                 self.result[self.counter_gs] = azimuth
 
-                print(f'cycle {self.counter_cycle+1} measurement {self.counter_gs+1}/265: azimuth = {azimuth}')
+                print(f'cycle {self.counter_cycle+1} measurement {self.counter_gs+1}/256: azimuth = {azimuth}')
 
                 self.counter_gs += 1
                 self.after(500, self.get_data)
