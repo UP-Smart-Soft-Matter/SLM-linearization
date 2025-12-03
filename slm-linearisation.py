@@ -178,25 +178,21 @@ for data in azimuth_over_grayscale:
             data[i] = datapoint - 180
 
 data_mean = np.stack(azimuth_over_grayscale).mean(axis=0)
-
 np.savetxt("raw_data_mean.txt", data_mean, fmt='%f')
 
 for i, datapoint in enumerate(data_mean):
     datapoint = (datapoint - 90) * (- 1)
     data_mean[i] = datapoint
 
-
-data_mean_shifted = (data_mean * -1) + 180
-
 ls = np.linspace(0,256, 256)
 
-plt.plot(ls, data_mean_shifted)
+plt.plot(ls, data_mean)
 plt.title("Azimuth Over Grayscale")
 plt.axhline(y=90, color='r', linewidth=0.4)
 plt.axvline(x=128, color='r', linewidth=0.4)
 plt.show()
 
-delta_list = linear_function(ls, max_rotation, 255) - data_mean_shifted
+delta_list = linear_function(ls, max_rotation, 255) - data_mean
 
 linearized = linear_function(ls, max_rotation, 255) + delta_list
 lut_float = ((linearized / max(linearized)) * 319)
@@ -209,4 +205,3 @@ plt.title("lut")
 plt.show()
 
 np.savetxt(f"{penal}_{wavelength}nm_9-5_lin-{retardation}pi_{lower_voltage}V-{upper_voltage}V{appendix}.csv", lut , delimiter=",", fmt="%d")
-
