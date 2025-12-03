@@ -86,7 +86,7 @@ class ImageDisplay(tk.Toplevel):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.image_display = ImageDisplay(2)
+        self.image_display = ImageDisplay(1)
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.__measuring_thread = MeasuringThread()
         self.__measuring_thread.start()
