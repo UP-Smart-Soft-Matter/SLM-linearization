@@ -14,11 +14,11 @@ max_rotation = np.degrees(retardation * np.pi)
 def linear_function(x, max_rotation, max_gs):
     return (max_rotation/max_gs) * x
 
-m1 = np.genfromtxt("raw_data_cycle1.csv", delimiter=",")
-m2 = np.genfromtxt("raw_data_cycle2.csv", delimiter=",")
-m3 = np.genfromtxt("raw_data_cycle3.csv", delimiter=",")
-m4 = np.genfromtxt("raw_data_cycle4.csv", delimiter=",")
-m5 = np.genfromtxt("raw_data_cycle5.csv", delimiter=",")
+m1 = np.genfromtxt("test_data/raw_data_cycle1.csv", delimiter=",")
+m2 = np.genfromtxt("test_data/raw_data_cycle2.csv", delimiter=",")
+m3 = np.genfromtxt("test_data/raw_data_cycle3.csv", delimiter=",")
+m4 = np.genfromtxt("test_data/raw_data_cycle4.csv", delimiter=",")
+m5 = np.genfromtxt("test_data/raw_data_cycle5.csv", delimiter=",")
 
 azimuth_over_grayscale = [m1, m2, m3, m4, m5]
 
