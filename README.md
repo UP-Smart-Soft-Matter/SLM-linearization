@@ -98,27 +98,3 @@ python plot_gs_a.py
 * `<penal>_<wavelength>nm_9-5_lin-<retardation>pi_<lower_voltage>V-<upper_voltage>V<appendix>.csv` – Final LUT from `slm-linearisation.py`
 
 `plot_gs_a.py` does not save data by default; it is used for plotting and visual verification.
-
----
-
-## Project Structure
-
-```
-project/
-│
-├─ slm-linearisation.py      # Full measurement and LUT generation
-├─ plot_gs_a.py              # Single-cycle measurement for testing
-├─ pax1000_controller/       # Module for interfacing with PAX1000
-├─ raw_data_cycle1.csv       # Example raw data files from multiple cycles
-├─ raw_data_mean.txt         # Example mean data file
-└─ VIS-014_491nm_9-5_lin-1pi_1V-1.86V_test.csv   # Example LUT
-```
-
----
-
-## Notes
-
-* The LUT is generated using a linearization correction derived from measured azimuth values.
-* Adjust the `retardation`, voltage range, and wavelength according to your optical setup.
-* Measurement cycles and repetition rate can be changed by modifying `counter_cycle` or `__rep_rate` in the `App` class of `slm-linearisation.py`.
-* Use `plot_gs_a.py` to verify LUTs before full measurement.
