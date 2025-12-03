@@ -14,24 +14,29 @@ max_rotation = np.degrees(retardation * np.pi)
 def linear_function(x, max_rotation, max_gs):
     return (max_rotation/max_gs) * x
 
-dummy = np.genfromtxt("dummy.txt", delimiter=",")
+m1 = np.genfromtxt("raw_data_cycle1.csv", delimiter=",")
+m2 = np.genfromtxt("raw_data_cycle2.csv", delimiter=",")
+m3 = np.genfromtxt("raw_data_cycle3.csv", delimiter=",")
+m4 = np.genfromtxt("raw_data_cycle4.csv", delimiter=",")
+m5 = np.genfromtxt("raw_data_cycle5.csv", delimiter=",")
 
-azimuth_over_grayscale = [dummy, dummy, dummy, dummy, dummy]
+azimuth_over_grayscale = [m1, m2, m3, m4, m5]
+
+for data in azimuth_over_grayscale:
+    for i, datapoint in enumerate(data[:21]):
+        if datapoint < 0:
+            data[i] = datapoint + 180
+    for i, datapoint in enumerate(data[236:]):
+        i = i + 236
+        if datapoint > 0:
+            data[i] = datapoint - 180
+
 data_mean = np.stack(azimuth_over_grayscale).mean(axis=0)
-
-jumps = []
+np.savetxt("raw_data_mean.txt", data_mean, fmt='%f')
 
 for i, datapoint in enumerate(data_mean):
-    if i < 255:
-        if abs(datapoint - data_mean[i + 1]) > 100:
-            jumps.append(i)
-    datapoint = datapoint - 90 * - 1
+    datapoint = (datapoint - 90) * (- 1)
     data_mean[i] = datapoint
-
-data_mean[:jumps[0] + 1] = data_mean[0:jumps[0] + 1] + 180
-data_mean[jumps[1] + 1:] = data_mean[jumps[1] + 1:] - 180
-
-data_mean = (data_mean * -1) + 180
 
 ls = np.linspace(0,256, 256)
 
