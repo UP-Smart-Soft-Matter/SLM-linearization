@@ -198,7 +198,7 @@ linearized = linear_function(ls, max_rotation, 255) + delta_list
 lut_float = ((linearized / max(linearized)) * 319)
 lut = np.empty_like(lut_float)
 for i, datapoint in enumerate(lut_float):
-    lut[i] = round(datapoint)
+    lut[i] = abs(round(datapoint))
 
 plt.plot(ls, lut)
 plt.title("lut")
