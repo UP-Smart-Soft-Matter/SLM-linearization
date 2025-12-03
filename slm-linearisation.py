@@ -99,14 +99,14 @@ class App(tk.Tk):
         while self._is_azimuth_none():
             print('PAX1000 starting up')
 
-        self.get_data()
+        self.get_data(100)
 
     def close(self):
         with self.__measuring_thread.kill_flag_lock:
             self.__measuring_thread.kill_flag = True
         self.destroy()
 
-    def get_data(self):
+    def get_data(self, rep_rate):
         if self.counter_cycle <= 5:
             if self.counter_gs <= 255:
                 img = fromarray(np.full((self.image_display.height, self.image_display.width), self.counter_gs, dtype=np.uint8))
@@ -119,14 +119,14 @@ class App(tk.Tk):
                 print(f'cycle {self.counter_cycle+1}/5 measurement {self.counter_gs+1}/256: azimuth = {azimuth}')
 
                 self.counter_gs += 1
-                self.after(500, self.get_data)
+                self.after(rep_rate, self.get_data)
             else:
                 global azimuth_over_grayscale
                 azimuth_over_grayscale.append(self.result.copy())
                 self.result = np.empty(256)
                 self.counter_gs = 0
                 self.counter_cycle += 1
-                self.after(500, self.get_data)
+                self.after(rep_rate, self.get_data)
         else:
             self.close()
 
@@ -160,7 +160,6 @@ class MeasuringThread(threading.Thread):
             azimuth = self.__pax.measure_azimuth()
             with self.azimuth_lock:
                 self.azimuth = azimuth
-            time.sleep(0.1)
         self.__pax.close()
 
 
