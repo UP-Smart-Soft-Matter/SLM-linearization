@@ -8,7 +8,7 @@ from PIL import Image, ImageTk
 from tkinter import messagebox
 import screeninfo
 import threading
-sys.path.append(r"C:\Users\Mika Music\PycharmProjects\PAX1000-controller")
+sys.path.append(r"C:\Users\SSMAdmin\PycharmProjects\PAX1000-controller")
 from pax1000_controller import *
 
 penal = 'VIS-014'
@@ -86,10 +86,11 @@ class ImageDisplay(tk.Toplevel):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.image_display = ImageDisplay(0)
+        self.image_display = ImageDisplay(2)
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.__measuring_thread = MeasuringThread()
         self.__measuring_thread.start()
+        self.__rep_rate = 100
         time.sleep(1)
 
         self.result = np.empty(256)
@@ -99,7 +100,7 @@ class App(tk.Tk):
         while self._is_azimuth_none():
             print('PAX1000 starting up')
 
-        self.get_data(100)
+        self.get_data(self.__rep_rate)
 
     def close(self):
         with self.__measuring_thread.kill_flag_lock:
@@ -107,7 +108,7 @@ class App(tk.Tk):
         self.destroy()
 
     def get_data(self, rep_rate):
-        if self.counter_cycle <= 5:
+        if self.counter_cycle < 5:
             if self.counter_gs <= 255:
                 img = fromarray(np.full((self.image_display.height, self.image_display.width), self.counter_gs, dtype=np.uint8))
                 self.image_display.show_image(img)
@@ -119,14 +120,15 @@ class App(tk.Tk):
                 print(f'cycle {self.counter_cycle+1}/5 measurement {self.counter_gs+1}/256: azimuth = {azimuth}')
 
                 self.counter_gs += 1
-                self.after(rep_rate, self.get_data)
+                self.after(rep_rate, self.get_data, self.__rep_rate)
             else:
                 global azimuth_over_grayscale
                 azimuth_over_grayscale.append(self.result.copy())
+                np.savetxt(f"raw_data_cycle{self.counter_cycle+1}.csv", self.result, fmt='%f')
                 self.result = np.empty(256)
                 self.counter_gs = 0
                 self.counter_cycle += 1
-                self.after(rep_rate, self.get_data)
+                self.after(rep_rate, self.get_data, self.__rep_rate)
         else:
             self.close()
 
@@ -166,31 +168,35 @@ class MeasuringThread(threading.Thread):
 app = App()
 app.mainloop()
 
+for data in azimuth_over_grayscale:
+    for i, datapoint in enumerate(data[:21]):
+        if datapoint < 0:
+            data[i] = datapoint + 180
+    for i, datapoint in enumerate(data[236:]):
+        i = i + 236
+        if datapoint > 0:
+            data[i] = datapoint - 180
+
 data_mean = np.stack(azimuth_over_grayscale).mean(axis=0)
 
-jumps = []
+np.savetxt("raw_data_mean.txt", data_mean, fmt='%f')
 
 for i, datapoint in enumerate(data_mean):
-    if i < 255:
-        if abs(datapoint - data_mean[i + 1]) > 100:
-            jumps.append(i)
-    datapoint = datapoint - 90 * - 1
+    datapoint = (datapoint - 90) * (- 1)
     data_mean[i] = datapoint
 
-data_mean[:jumps[0] + 1] = data_mean[0:jumps[0] + 1] + 180
-data_mean[jumps[1] + 1:] = data_mean[jumps[1] + 1:] - 180
 
-data_mean = (data_mean * -1) + 180
+data_mean_shifted = (data_mean * -1) + 180
 
 ls = np.linspace(0,256, 256)
 
-plt.plot(ls, data_mean)
+plt.plot(ls, data_mean_shifted)
 plt.title("Azimuth Over Grayscale")
 plt.axhline(y=90, color='r', linewidth=0.4)
 plt.axvline(x=128, color='r', linewidth=0.4)
 plt.show()
 
-delta_list = linear_function(ls, max_rotation, 255) - data_mean
+delta_list = linear_function(ls, max_rotation, 255) - data_mean_shifted
 
 linearized = linear_function(ls, max_rotation, 255) + delta_list
 lut_float = ((linearized / max(linearized)) * 319)
