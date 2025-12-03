@@ -23,9 +23,37 @@ azimuth_over_grayscale = []
 max_rotation = np.degrees(retardation * np.pi)
 
 def linear_function(x, max_rotation, max_gs):
+    """
+    Computes a linear mapping from a grayscale value to a rotation value.
+
+    Parameters
+    ----------
+    x : float or array-like
+        Grayscale input values.
+    max_rotation : float
+        Maximum rotation value corresponding to the highest grayscale value.
+    max_gs : int or float
+        Maximum grayscale range.
+
+    Returns
+    -------
+    float or array-like
+        Linearly mapped rotation values.
+    """
     return (max_rotation/max_gs) * x
 
 def init_pax():
+    """
+    Initializes a connection to a PAX1000 device.
+
+    Repeatedly attempts to create a PAX1000 instance until successful.
+    Displays an error dialog if the device is not detected.
+
+    Returns
+    -------
+    PAX1000
+        Initialized PAX1000 controller object.
+    """
     while True:
         try:
             pax = PAX1000()
@@ -36,7 +64,20 @@ def init_pax():
 
 
 class ImageDisplay(tk.Toplevel):
+    """
+    A fullscreen image display window bound to a specific monitor.
+
+    Handles creating a borderless window and updating displayed images.
+    """
     def __init__(self, monitor: int):
+        """
+        Creates a fullscreen display window on the specified monitor.
+
+        Parameters
+        ----------
+        monitor : int
+            Index of the target monitor.
+        """
         assert isinstance(monitor, int) and monitor >= 0, "Monitor must be a non-negative integer!"
 
         super().__init__()
@@ -60,6 +101,14 @@ class ImageDisplay(tk.Toplevel):
         self.label = None
 
     def show_image(self, image_object):
+        """
+        Displays a PIL image in the window.
+
+        Parameters
+        ----------
+        image_object : PIL.Image.Image
+            Image object to display in the window.
+        """
         assert isinstance(image_object, Image.Image), "Image must be a PIL Image object"
 
         photo = ImageTk.PhotoImage(image_object)
@@ -73,6 +122,14 @@ class ImageDisplay(tk.Toplevel):
             self.__update_image(photo)
 
     def __update_image(self, photo):
+        """
+        Updates the displayed image with a new PhotoImage.
+
+        Parameters
+        ----------
+        photo : ImageTk.PhotoImage
+            Updated image to replace the current one.
+        """
         assert isinstance(photo, ImageTk.PhotoImage), "Image must be a PhotoImage object"
 
         # Update the image in the existing label
@@ -80,11 +137,24 @@ class ImageDisplay(tk.Toplevel):
         self.label.image = photo  # Update the reference to avoid garbage collection
 
     class NoSecondMonitorError(Exception):
+        """
+        Raised when the requested monitor index does not exist.
+        """
         pass
 
 
 class App(tk.Tk):
+    """
+    Main application controlling image projection and PAX1000 measurements.
+
+    Generates grayscale images, displays them, collects azimuth data,
+    and manages measurement cycles.
+    """
     def __init__(self):
+        """
+        Initializes the application window, measurement thread,
+        and dataset structures, then begins the measurement routine.
+        """
         super().__init__()
         self.image_display = ImageDisplay(2)
         self.protocol("WM_DELETE_WINDOW", self.close)
@@ -103,11 +173,23 @@ class App(tk.Tk):
         self.get_data(self.__rep_rate)
 
     def close(self):
+        """
+        Stops the measurement thread and closes the application window.
+        """
         with self.__measuring_thread.kill_flag_lock:
             self.__measuring_thread.kill_flag = True
         self.destroy()
 
     def get_data(self, rep_rate):
+        """
+        Runs measurement cycles by projecting grayscale images and
+        recording corresponding azimuth values.
+
+        Parameters
+        ----------
+        rep_rate : int
+            Time delay between measurements in milliseconds.
+        """
         if self.counter_cycle < 5:
             if self.counter_gs <= 255:
                 img = fromarray(np.full((self.image_display.height, self.image_display.width), self.counter_gs, dtype=np.uint8))
@@ -133,6 +215,14 @@ class App(tk.Tk):
             self.close()
 
     def _is_azimuth_none(self):
+        """
+        Checks whether the measurement thread has initialized azimuth values.
+
+        Returns
+        -------
+        bool
+            True if azimuth is still None, otherwise False.
+        """
         with self.__measuring_thread.azimuth_lock:
             azimuth = self.__measuring_thread.azimuth
 
@@ -146,7 +236,15 @@ class App(tk.Tk):
 
 
 class MeasuringThread(threading.Thread):
+    """
+    Thread that continuously polls azimuth values from the PAX1000 device.
+
+    Stores the latest reading and stops when the kill flag is set.
+    """
     def __init__(self):
+        """
+        Initializes the measuring thread and required synchronization locks.
+        """
         super().__init__()
         self.kill_flag = False
         self.kill_flag_lock = threading.Lock()
@@ -157,6 +255,10 @@ class MeasuringThread(threading.Thread):
         self.__pax = None
 
     def run(self):
+        """
+        Connects to the PAX1000 and continuously updates the azimuth value
+        until the kill flag is triggered.
+        """
         self.__pax = init_pax()
         while not self.kill_flag:
             azimuth = self.__pax.measure_azimuth()
@@ -168,40 +270,56 @@ class MeasuringThread(threading.Thread):
 app = App()
 app.mainloop()
 
+# Post-measurement data processing
+
+# Adjust negative azimuth values at the start and positive azimuth values at the end
 for data in azimuth_over_grayscale:
+    # Correct first 20 datapoints if they are negative
     for i, datapoint in enumerate(data[:21]):
         if datapoint < 0:
             data[i] = datapoint + 180
+    # Correct last 20 datapoints if they are positive
     for i, datapoint in enumerate(data[236:]):
         i = i + 236
         if datapoint > 0:
             data[i] = datapoint - 180
 
+# Compute the mean azimuth over all measurement cycles
 data_mean = np.stack(azimuth_over_grayscale).mean(axis=0)
+# Save mean data to a text file
 np.savetxt("raw_data_mean.txt", data_mean, fmt='%f')
 
+# Flip and offset mean data to correct for reference frame
 for i, datapoint in enumerate(data_mean):
-    datapoint = (datapoint - 90) * (- 1)
+    datapoint = (datapoint - 90) * (-1)
     data_mean[i] = datapoint
 
-ls = np.linspace(0,256, 256)
+# Create a grayscale axis from 0 to 256
+ls = np.linspace(0, 256, 256)
 
+# Plot the mean azimuth vs. grayscale
 plt.plot(ls, data_mean)
 plt.title("Azimuth Over Grayscale")
-plt.axhline(y=90, color='r', linewidth=0.4)
-plt.axvline(x=128, color='r', linewidth=0.4)
+plt.axhline(y=90, color='r', linewidth=0.4)  # reference horizontal line
+plt.axvline(x=128, color='r', linewidth=0.4)  # reference vertical line
 plt.show()
 
+# Calculate deviation from ideal linear function
 delta_list = linear_function(ls, max_rotation, 255) - data_mean
 
+# Apply correction to linearize the data
 linearized = linear_function(ls, max_rotation, 255) + delta_list
+
+# Scale the linearized data to LUT (0-319) and round to integers
 lut_float = ((linearized / max(linearized)) * 319)
 lut = np.empty_like(lut_float)
 for i, datapoint in enumerate(lut_float):
     lut[i] = abs(round(datapoint))
 
+# Plot the final LUT
 plt.plot(ls, lut)
 plt.title("lut")
 plt.show()
 
-np.savetxt(f"{penal}_{wavelength}nm_9-5_lin-{retardation}pi_{lower_voltage}V-{upper_voltage}V{appendix}.csv", lut , delimiter=",", fmt="%d")
+# Save LUT to CSV with naming format including wavelength, voltage, and appendix
+np.savetxt(f"{penal}_{wavelength}nm_9-5_lin-{retardation}pi_{lower_voltage}V-{upper_voltage}V{appendix}.csv", lut, delimiter=",", fmt="%d")
