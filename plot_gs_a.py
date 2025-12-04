@@ -87,7 +87,7 @@ class App(tk.Tk):
         self.__rep_rate = 100
         time.sleep(1)
 
-        self.result = np.empty(256)
+        self.result = np.empty((256,2))
         self.counter_gs = 0
 
         while self._is_azimuth_none():
@@ -107,9 +107,12 @@ class App(tk.Tk):
 
             with self.__measuring_thread.azimuth_lock:
                 azimuth = self.__measuring_thread.azimuth
-            self.result[self.counter_gs] = azimuth
+            with self.__measuring_thread.docp_lock:
+                docp = self.__measuring_thread.docp
+            self.result[self.counter_gs][0] = azimuth
+            self.result[self.counter_gs][1] = docp
 
-            print(f'measurement {self.counter_gs+1}/256: azimuth = {azimuth}')
+            print(f'measurement {self.counter_gs+1}/256: azimuth = {azimuth}, docp = {docp}')
 
             self.counter_gs += 1
             self.after(rep_rate, self.get_data, self.__rep_rate)
@@ -140,14 +143,19 @@ class MeasuringThread(threading.Thread):
         self.azimuth = None
         self.azimuth_lock = threading.Lock()
 
+        self.docp = None
+        self.docp_lock = threading.Lock()
+
         self.__pax = None
 
     def run(self):
         self.__pax = init_pax()
         while not self.kill_flag:
-            azimuth = self.__pax.measure_azimuth()
+            measurement = self.__pax.measure()
             with self.azimuth_lock:
-                self.azimuth = azimuth
+                self.azimuth = measurement['azimuth']
+            with self.docp_lock:
+                self.docp = measurement['docp']
         self.__pax.close()
 
 
