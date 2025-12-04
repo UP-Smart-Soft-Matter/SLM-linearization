@@ -87,7 +87,7 @@ class App(tk.Tk):
         self.__rep_rate = 100
         time.sleep(1)
 
-        self.result = np.empty((256,2))
+        self.result = np.empty((2, 256))
         self.counter_gs = 0
 
         while self._is_azimuth_none():
@@ -162,14 +162,18 @@ class MeasuringThread(threading.Thread):
 app = App()
 app.mainloop()
 
-for i, datapoint in enumerate(azimuth_over_grayscale):
+for i, datapoint in enumerate(azimuth_over_grayscale[0]):
     datapoint = (datapoint - 90) * (- 1)
-    azimuth_over_grayscale[i] = datapoint
+    azimuth_over_grayscale[0][i] = datapoint
 
 ls = np.linspace(0,256, 256)
 
-plt.plot(ls, azimuth_over_grayscale)
+plt.plot(ls, azimuth_over_grayscale[0])
 plt.title("Azimuth Over Grayscale")
 plt.axhline(y=90, color='r', linewidth=0.4)
 plt.axvline(x=128, color='r', linewidth=0.4)
+plt.show()
+
+plt.plot(ls, azimuth_over_grayscale[1])
+plt.title("DOCP Over Grayscale")
 plt.show()
