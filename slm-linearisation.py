@@ -261,7 +261,7 @@ class MeasuringThread(threading.Thread):
         """
         self.__pax = init_pax()
         while not self.kill_flag:
-            azimuth = self.__pax.measure_azimuth()
+            azimuth = self.__pax.measure()["azimuth"]
             with self.azimuth_lock:
                 self.azimuth = azimuth
         self.__pax.close()
