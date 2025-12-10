@@ -109,8 +109,8 @@ class App(tk.Tk):
                 azimuth = self.__measuring_thread.azimuth
             with self.__measuring_thread.docp_lock:
                 docp = self.__measuring_thread.docp
-            self.result[self.counter_gs][0] = azimuth
-            self.result[self.counter_gs][1] = docp
+            self.result[0][self.counter_gs] = azimuth
+            self.result[1][self.counter_gs] = docp
 
             print(f'measurement {self.counter_gs+1}/256: azimuth = {azimuth}, docp = {docp}')
 
