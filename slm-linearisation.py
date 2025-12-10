@@ -20,7 +20,7 @@ appendix = '_test'
 
 
 azimuth_over_grayscale = []
-max_rotation = np.degrees(retardation * np.pi)
+max_rotation = np.degrees((retardation/2) * np.pi)
 
 def linear_function(x, max_rotation, max_gs):
     """
