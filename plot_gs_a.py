@@ -11,13 +11,7 @@ import threading
 sys.path.append(r"C:\Users\SSMAdmin\PycharmProjects\PAX1000-controller")
 from pax1000_controller import *
 
-retardation = 1 #pi
-
 azimuth_over_grayscale = None
-max_rotation = np.degrees(retardation * np.pi)
-
-def linear_function(x, max_rotation, max_gs):
-    return (max_rotation/max_gs) * x
 
 def init_pax():
     while True:
