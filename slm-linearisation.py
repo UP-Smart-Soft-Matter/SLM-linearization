@@ -1,5 +1,6 @@
 import sys
 import time
+from datetime import datetime
 from PIL.Image import fromarray
 from matplotlib import pyplot as plt
 import numpy as np
@@ -13,10 +14,10 @@ from pax1000_controller import *
 
 penal = 'VIS-014'
 wavelength = 491
-retardation = 1 #pi
-lower_voltage = 1
-upper_voltage = '1,86'
-appendix = '_test'
+retardation = 2 #pi
+lower_voltage = "1,02"
+upper_voltage = '1,85'
+appendix = f'_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
 
 
 azimuth_over_grayscale = []
@@ -167,8 +168,9 @@ class App(tk.Tk):
         self.counter_gs = 0
         self.counter_cycle = 0
 
+        print('PAX1000 starting up')
         while self._is_azimuth_none():
-            print('PAX1000 starting up')
+            pass
 
         self.get_data(self.__rep_rate)
 
