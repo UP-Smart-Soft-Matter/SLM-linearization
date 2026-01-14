@@ -1,5 +1,3 @@
-import sys
-import time
 from datetime import datetime
 from PIL.Image import fromarray
 from matplotlib import pyplot as plt
@@ -9,7 +7,6 @@ from PIL import Image, ImageTk
 from tkinter import messagebox
 import screeninfo
 import threading
-sys.path.append(r"C:\Users\SSMAdmin\PycharmProjects\PAX1000-controller")
 from pax1000_controller import *
 
 penal = 'VIS-014'
